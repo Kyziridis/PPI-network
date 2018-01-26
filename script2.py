@@ -7,12 +7,16 @@ Created on Wed Jan 10 15:00:58 2018
 
 DBDM - Assignment.4 Protein-Protein-Interaction
 """
+import matplotlib.pyplot as plt
+import plotly.plotly as py
 import networkx as nx
 import numpy as np
 import csv
 from tqdm import tqdm
 import itertools as it
+import os
 
+os.chdir("/home/dead/Documents/DBDM/Assignment-4/DM_Assignment_02/ResourceFiles")
 # open the file humanPPI.txt and make it undirected
 G1=nx.read_edgelist('humanPPI.txt', delimiter=',',create_using=nx.DiGraph())
 Gu=G1.to_undirected()
@@ -70,9 +74,11 @@ neighbors = np.reshape(neighbors , (len(dirneigh) , 2))
 # Average weight = 3.41
 np.mean(neighbors[:,1])
 
+THRS = input("\nProvide a number for threshold:  ")
+
 # Find the couples above THRESHOLD :  to be cancer candidates
-candidate_inx = np.where(neighbors[:,1] > 8)
-non_cand_inx = np.where(neighbors[:,1] <= 8)
+candidate_inx = np.where(neighbors[:,1] > int(THRS))
+non_cand_inx = np.where(neighbors[:,1] <= int(THRS))
 cancer_candidates = neighbors[candidate_inx]
 non_cancer_candidates = neighbors[non_cand_inx]
 
@@ -109,14 +115,14 @@ fp = np.where(truth[indx,1] == 'nonCancer') # FalsePositive (pred cancer -> trut
 fn = np.where(truth[indx_non,1] == 'cancer')# FalseNegative (pred NONcancer -> truth Cancer)
 
 # Calculate the evaluation formulas: Precision - Recall and F-Measure
-Precision = correct[0].shape[0]/truth[indx].shape[0] 
-Recall = len(correct[0])/len(correct[0]) + len(fn[0])
-F_measure = 2*Precision*Recall/Precision + Recall
+Precision = correct[0].shape[0]/(len(fp[0]) +correct[0].shape[0])  
+Recall = len(correct[0])/(len(correct[0]) + len(fn[0]))
+F_measure = 2*Precision*Recall/(Precision + Recall)
 
 
 print("\nFirst Naiv Approach: Direct neighbors of cancer proteins                                 >_")
-print('\nAccuracy/Precision in '+str(truth[indx].shape[0])+' samples: ' + str(Precision) )
-print('\n Recall: ' + str(Recall) + ' F-Measure: ' + str(F_measure) )
+print('\nPrecision: ' + str(Precision) )
+print('\nRecall: ' + str(Recall) + ' F-Measure: ' + str(F_measure) )
 ################################################################################################
 
 
@@ -127,8 +133,8 @@ print('\n Recall: ' + str(Recall) + ' F-Measure: ' + str(F_measure) )
 ########################################################
 # Shortest Path Algorithm #
 print("\n")
-print("Second Approach: Finding shortest path between all cancer variables")
-print('\nConstructing the shortest_path_list for all cancer protein combination above 4 neighbors    >_\n')
+print("Second Approach: Finding shortest path from all cancer variables")
+print('\nConstructing the shortest_path_list for all cancer proteins    >_\n')
 #comb = list(it.combinations(range(len(cancer)),2))
 #comb = list(it.combinations(range(names_of_dirneighbors.shape[0]),2))
 srtlist = []
@@ -182,22 +188,13 @@ fn1 = np.where(truth[indx1_non,1] == 'cancer')# FalseNegative (pred NONcancer ->
 
 # Calculate the evaluation formulas: Precision - Recall and F-Measure
 Precision = correct1[0].shape[0]/truth[indx1].shape[0] 
-Recall = len(correct1[0])/len(correct1[0]) + len(fn1[0])
-F_measure = 2*Precision*Recall/Precision + Recall
-
-
-print("\nAssume that all proteins found in-between two cancer nodes will be cancer candidates        >_")
-print('\nAccuracy/Precision in '+str(truth[indx1].shape[0])+' samples: ' + str(Precision) )
-print('\n Recall: ' + str(Recall) + ' F-Measure: ' + str(F_measure) )
+Recall = len(correct1[0])/(len(correct1[0]) + len(fn1[0]))
+F_measure = 2*Precision*Recall/(Precision + Recall)
 
 
 
-
-
-
-
-
-
+print("\nCalculating the weights for each connection through shortest path and the sum of weights")
+# Make the list of all weights from shortest paths
 telikol = []
 for can in tqdm(range(len(srtlist))):
     
@@ -215,25 +212,89 @@ for can in tqdm(range(len(srtlist))):
     #teliko = np.append(teliko , adreas)
     telikol.append(adreas)
     
-
-
-
-
-
-
-
     
     
     
+# Sort all lists inside telikol_list
+#add_weigths = []    
+r1 = np.zeros((len(telikol[0])))
+#r1 = np.reshape(r1 , (len(r1) ,1))
+for i in tqdm(range(len(telikol))):
+    telikol[i].sort()
+    r = list(map(int,np.asarray(telikol[i])[:,1])) # weights as integers from the list
+    r1 = r1 + np.asarray(r)
+    
+# just the name of the proteins sorted    
+prots  = np.reshape(np.asarray(telikol[0])[:,0] , (len(r1),1))
+r1 = np.reshape(r1 , (len(r1),1))  
  
+add_weigths = np.hstack((prots,r1 ) )
+    
+
+
+a = list(map(float,add_weigths[:,1]))
+flag = input("\nPlot the histogram of sum of weights? [y/n]:  ")
+if flag == 'y':
+    plt.figure()
+    plt.hist(a)
+    plt.show()    
+THRS2 = input('\nProvide a number for threshold e.g. 10000:  ')   
+
+lista = []     
+for i in range(len(a)):
+    if a[i] > int(THRS2):
+        lista.append(['cancer'])
+    else:
+        lista.append(['nonCancer'])
     
     
+soupa = np.hstack((prots , lista))    
+
+cancer_indx = np.where(soupa[:,1] == 'cancer')
+non_cancer_indx = np.where(soupa[:,1] == 'nonCancer')      
+
+names1_cancer = np.intersect1d(soupa[cancer_indx][:,0] , truth[:,0])  
+names1_cancer = np.reshape(names1_cancer , (len(names1_cancer),1))  
+indx_cancer_e = np.where(names1_cancer == truth[:,0])[1]
     
+names1_non_cancer = np.intersect1d(soupa[non_cancer_indx][:,0] , truth[:,0])  
+names1_non_cancer = np.reshape(names1_non_cancer , (len(names1_non_cancer),1))  
+indx_non_cancer_e = np.where(names1_non_cancer == truth[:,0])[1]
+
     
-    
-    
-    
-    
+tp = len(np.where(truth[indx_cancer_e,1] == 'cancer')[0]) 
+fp = len(np.where(truth[indx_cancer_e,1] == 'nonCancer')[0]) 
+fn = len(np.where(truth[indx_non_cancer_e,1] == 'cancer')[0])
+
+
+Precision = tp/(fp + tp)
+Recall = tp/(fn+tp)
+F_measure = 2*Precision*Recall/(Precision + Recall)
+
+print('\nPrecision: ' + str(Precision) )
+print('\nRecall: ' + str(Recall) + ' F-Measure: ' + str(F_measure) )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
     
     
