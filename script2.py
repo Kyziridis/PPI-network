@@ -15,7 +15,7 @@ import csv
 from tqdm import tqdm
 import itertools as it
 import os
-
+import collections as cl
 os.chdir("/home/dead/Documents/DBDM/Assignment-4/DM_Assignment_02/ResourceFiles")
 # open the file humanPPI.txt and make it undirected
 G1=nx.read_edgelist('humanPPI.txt', delimiter=',',create_using=nx.DiGraph())
@@ -54,6 +54,27 @@ with open('dbdm.csv', 'w',encoding="utf-8") as csv_file:
 G=nx.read_edgelist('dbdm.csv', delimiter='\t',create_using=nx.Graph(),data=[('weight',int)])
 nx.info(G)
 
+#Plot the degree ditribution of the network
+flag3 = input('Plot the degree distribution histogram of the network? [y/n]:  ')
+if flag3 == 'y':
+    
+    # PLot degree distribution
+    degree_sequence = sorted([d for n, d in G.degree()], reverse=True)  # degree sequence
+    # print "Degree sequence", degree_sequence
+    degreeCount = cl.Counter(degree_sequence)
+    deg, cnt = zip(*degreeCount.items())
+    
+    fig= plt.figure(figsize=(15,10))
+    plt.bar(deg, cnt, width=0.80, color='b')
+    
+    plt.title("Degree Histogram", fontsize=15)
+    plt.ylabel("Count",fontsize=15)
+    plt.xlabel("Degree",fontsize=15)
+    
+    plt.savefig('Degree Histogram.png')
+    plt.show()
+
+
 # Find dierct neihbors only for the cancer-proteins
 dirneigh = []
 for i in cancer:
@@ -73,6 +94,8 @@ neighbors = np.reshape(neighbors , (len(dirneigh) , 2))
 
 # Average weight = 3.41
 np.mean(neighbors[:,1])
+heuristic_P = []
+heuristic_R = []
 
 THRS = input("\nProvide a number for threshold:  ")
 
@@ -81,7 +104,6 @@ candidate_inx = np.where(neighbors[:,1] > int(THRS))
 non_cand_inx = np.where(neighbors[:,1] <= int(THRS))
 cancer_candidates = neighbors[candidate_inx]
 non_cancer_candidates = neighbors[non_cand_inx]
-
 
 
 # first prediction testdn are predicted as cancers
@@ -120,14 +142,29 @@ Recall = len(correct[0])/(len(correct[0]) + len(fn[0]))
 F_measure = 2*Precision*Recall/(Precision + Recall)
 
 
+heuristic_P.append(Precision)
+heuristic_R.append(Recall)
+
 print("\nFirst Naiv Approach: Direct neighbors of cancer proteins                                 >_")
 print('\nPrecision: ' + str(Precision) )
 print('\nRecall: ' + str(Recall) + ' F-Measure: ' + str(F_measure) )
 ################################################################################################
 
-
-
-
+# =============================================================================
+# flag2 = input("Plot the Precision Vs Recall for the first prediction?  [y/n]:  ")
+# if flag2 == 'y':
+#     
+#     # Precision Recall graph
+#     fig = plt.figure(figsize=(15,10))
+#     ax = fig.add_subplot(111)
+#     ax.plot(heuristic_R, heuristic_P, color='red', linewidth=3) 
+#     fig.suptitle('Precision Vs Recall ', fontsize=15)
+#     plt.ylabel('Precision',fontsize=15)
+#     plt.xlabel('Recall',fontsize=15)
+#     plt.savefig('PR-plot.png')
+#     plt.show()
+#     print("The above plot visualizes the values of precision and recall for all different thresholds")
+# =============================================================================
 
 #################################################################
 ########################################################
@@ -193,7 +230,7 @@ F_measure = 2*Precision*Recall/(Precision + Recall)
 
 
 
-print("\nCalculating the weights for each connection through shortest path and the sum of weights")
+print("\nCalculating the sum of weights for each connection through shortest path ")
 # Make the list of all weights from shortest paths
 telikol = []
 for can in tqdm(range(len(srtlist))):
@@ -235,9 +272,14 @@ add_weigths = np.hstack((prots,r1 ) )
 a = list(map(float,add_weigths[:,1]))
 flag = input("\nPlot the histogram of sum of weights? [y/n]:  ")
 if flag == 'y':
-    plt.figure()
+    plt.figure(figsize=(15,10))
     plt.hist(a)
+    plt.title('Histogram sum of weights', fontsize=15)
+    plt.xlabel('Weights' , fontsize=15)
+    plt.ylabel('Frequency' , fontsize=15)
+    plt.savefig('SumOfWeightsHIST.png')
     plt.show()    
+    
 THRS2 = input('\nProvide a number for threshold e.g. 10000:  ')   
 
 lista = []     
