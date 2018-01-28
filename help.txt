@@ -1,2 +1,0 @@
-Script2 includes shortest paths for all cancer proteins so object 'telikol' cinsists of 747 lists of proteins and calculated weights FROM each node of the shortest path.
-
