@@ -70,6 +70,7 @@ if flag3 == 'y':
     plt.title("Degree Histogram", fontsize=15)
     plt.ylabel("Count",fontsize=15)
     plt.xlabel("Degree",fontsize=15)
+    plt.xlim(xmax=150)
     
     plt.savefig('Degree Histogram.png')
     plt.show()
@@ -320,6 +321,24 @@ print('\nRecall: ' + str(Recall) + ' F-Measure: ' + str(F_measure) )
 
 
 
+
+# Fill in the test2.txt
+
+pred_indx = np.where(np.asarray(testdn)[:,0].reshape((len(testdn),1)) == pred[:,0])[1]
+pred_nonindx = np.where(np.asarray(testdn_non)[:,0].reshape((len(testdn_non),1)) == pred[:,0])[1]
+
+pred[pred_indx,1] = 'cancer'
+pred[pred_nonindx,1] = 'nonCancer'
+
+
+
+
+
+# Export the PredictionResultsTest2.txt
+with open('PredictionResultsTest2.txt', 'w',encoding="utf-8") as csv_file:
+    writer = csv.writer(csv_file, delimiter='\t',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    for j in pred:
+        writer.writerow(j)
 
 
 
